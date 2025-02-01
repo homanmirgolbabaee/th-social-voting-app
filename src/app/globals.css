@@ -2,20 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  overflow-y: overlay;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-[#0A0A0A] to-[#1A1A1A];
+  }
+  
+  /* Custom hover effects for links */
+  a {
+    @apply transition-all duration-200;
+  }
+  
+  /* Custom hover effects for buttons */
+  button {
+    @apply transition-all duration-200;
+  }
+  
+  /* Custom selection color */
+  ::selection {
+    @apply bg-[#FF6B00]/20 text-white;
+  }
 }
