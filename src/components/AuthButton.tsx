@@ -115,7 +115,7 @@ export default function AuthButton() {
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 padding: '2px 4px',
-                margin: '-2px -4px', // Offset padding to maintain layout
+                margin: '-2px -4px',
                 borderRadius: '4px',
                 '&:hover': {
                   color: '#FF8534',
@@ -125,7 +125,6 @@ export default function AuthButton() {
                   transform: 'translateY(1px)',
                 }
               },
-              // Style the links at the bottom specifically
               message: {
                 fontSize: '14px',
                 a: {
@@ -148,24 +147,31 @@ export default function AuthButton() {
               sign_up: {
                 email_label: 'Email address',
                 password_label: 'Create a password',
-                button_label: 'Continue with email',
-                social_provider_text: 'Continue with GitHub',
+                button_label: 'Sign in with Socials',
+                social_provider_text: 'Continue with social account',
                 link_text: 'Don\'t have an account? Sign up',
               },
               sign_in: {
                 email_label: 'Email address',
                 password_label: 'Your password',
-                button_label: 'Continue with email',
-                social_provider_text: 'Continue with GitHub',
+                button_label: 'Sign In',
+                social_provider_text: 'Continue with social account',
                 link_text: 'Already have an account? Sign in',
-              }
+              },
+              providers: {
+                github: 'Continue with GitHub',
+                google: 'Continue with Google',
+              },
             }
           }}
-          providers={['github']}
+          providers={['github', 'google']}
           redirectTo={window.location.origin}
+          providerScopes={{
+            google: 'email profile',
+          }}
         />
 
-        {/* Add custom styles for the bottom links */}
+        {/* Custom hover styles */}
         <style jsx global>{`
           .supabase-auth-ui_ui-anchor {
             position: relative;
@@ -182,6 +188,18 @@ export default function AuthButton() {
 
           .supabase-auth-ui_ui-anchor:active {
             transform: translateY(1px) !important;
+          }
+
+          /* Custom provider button styles */
+          .supabase-auth-ui_ui-button[data-provider="google"] {
+            background: #fff !important;
+            color: #1A1A1A !important;
+            border: 1px solid #e2e8f0 !important;
+          }
+
+          .supabase-auth-ui_ui-button[data-provider="google"]:hover {
+            background: #f8fafc !important;
+            border-color: #FF6B00 !important;
           }
         `}</style>
       </div>
