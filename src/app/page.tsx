@@ -3,55 +3,100 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LoadingSpinner} from '@/components/LoadingSpinner'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
+import VoteButton from '@/components/VoteButton'
 
 export default function Home() {
   const [pages, setPages] = useState<any[]>([])
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let mounted = true
+
     const setupAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      
-      if (session?.user) {
-        fetchPages()
-      } else {
-        setLoading(false)
-      }
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          fetchPages()
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (mounted) {
+          setUser(session?.user ?? null)
+          await fetchPages()
         }
-      })
-
-      return () => subscription.unsubscribe()
+      } catch (error) {
+        console.error('Auth setup error:', error)
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
     }
 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (mounted) {
+        setUser(session?.user ?? null)
+        await fetchPages()
+      }
+    })
+
     setupAuth()
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const fetchPages = async () => {
     try {
+      console.log('Fetching pages...')
       const { data, error } = await supabase
         .from('pages')
-        .select('*')
+        .select('id, message, vote_count, creator_id, created_at, title')
         .order('vote_count', { ascending: false })
-      
-      if (!error && data) {
-        setPages(data)
+
+      if (error) {
+        console.error('Pages query error:', error)
+        setError('Failed to fetch pages')
+        return
       }
+
+      if (!data || data.length === 0) {
+        setPages([])
+        return
+      }
+
+      const creatorIds = [...new Set(data.map(page => page.creator_id))]
+      
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', creatorIds)
+
+      if (profilesError) {
+        console.error('Profiles query error:', profilesError)
+      }
+
+      const usernameMap = (profiles || []).reduce((acc, profile) => ({
+        ...acc,
+        [profile.id]: profile.username
+      }), {})
+
+      const pagesWithUsernames = data.map(page => ({
+        ...page,
+        creator_username: usernameMap[page.creator_id] || 'Anonymous'
+      }))
+
+      setPages(pagesWithUsernames)
+    } catch (error) {
+      console.error('Error in fetchPages:', error)
+      setError('An error occurred while fetching pages')
     } finally {
       setLoading(false)
     }
   }
 
-  // Initial loading state
   if (!user && loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -67,8 +112,6 @@ export default function Home() {
     )
   }
 
-  // Not authenticated
-  // In page.tsx, update the not authenticated return:
   if (!user) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
@@ -98,52 +141,10 @@ export default function Home() {
                       inputPlaceholder: '#666666',
                     }
                   }
-                },
-                style: {
-                  container: { width: '100%' },
-                  button: {
-                    height: '44px',
-                    borderRadius: '8px',
-                    fontSize: '15px',
-                    fontWeight: '500',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    }
-                  },
-                  input: {
-                    height: '44px',
-                    borderRadius: '8px',
-                    fontSize: '15px',
-                    transition: 'all 0.2s ease',
-                    '&:hover': { borderColor: '#FF6B00' },
-                    '&:focus': {
-                      boxShadow: '0 0 0 2px rgba(255, 107, 0, 0.2)',
-                    }
-                  },
-                  label: {
-                    fontSize: '14px',
-                    color: '#e5e7eb',
-                    marginBottom: '6px',
-                  },
-                  divider: {
-                    background: 'rgba(255, 255, 255, 0.1)',
-                  },
-                  anchor: {
-                    color: '#FF6B00',
-                    fontSize: '14px',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                    transition: 'all 0.2s ease',
-                  }
-                },
+                }
               }}
               providers={['github', 'google']}
               redirectTo={window.location.origin}
-              providerScopes={{
-                google: 'email profile',
-              }}
             />
           </div>
         </div>
@@ -159,7 +160,6 @@ export default function Home() {
         exit={{ opacity: 0 }}
         className="space-y-8"
       >
-        {/* Header Section */}
         <motion.div 
           initial={{ y: -20 }}
           animate={{ y: 0 }}
@@ -197,7 +197,16 @@ export default function Home() {
           </motion.div>
         </motion.div>
 
-        {/* Content Section */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6"
+          >
+            <p className="text-red-400">{error}</p>
+          </motion.div>
+        )}
+
         {loading ? (
           <motion.div 
             initial={{ opacity: 0 }}
@@ -206,7 +215,7 @@ export default function Home() {
           >
             {[...Array(3)].map((_, i) => (
               <motion.div
-                key={i}
+                key={`loading-skeleton-${i}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
@@ -245,17 +254,16 @@ export default function Home() {
           >
             {pages.map((page, index) => (
               <motion.div
-                key={page.page_id}
+                key={`page-${page.id}`}
                 variants={{
                   hidden: { opacity: 0, y: 20 },
                   show: { opacity: 1, y: 0 }
                 }}
                 whileHover={{ scale: 1.01 }}
                 className="group bg-[#1A1A1A]/90 backdrop-blur-sm rounded-xl p-6 border border-[#333333]
-                         hover:border-[#FF6B00]/30 transition-all duration-200"
+                        hover:border-[#FF6B00]/30 transition-all duration-200"
               >
                 <div className="flex items-start gap-6">
-                  {/* Rank Number */}
                   <motion.div 
                     className="flex flex-col items-center"
                     whileHover={{ scale: 1.1 }}
@@ -265,11 +273,12 @@ export default function Home() {
                     </span>
                   </motion.div>
 
-                  {/* Content */}
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-white group-hover:text-[#FF6B00] transition-colors">
-                      {page.message}
-                    </h3>
+                    <Link href={`/page/${page.id}`} className="block">
+                      <h3 className="text-xl font-semibold text-white group-hover:text-[#FF6B00] transition-colors">
+                        {page.message}
+                      </h3>
+                    </Link>
                     <div className="flex items-center gap-4 mt-4">
                       <span className="flex items-center gap-2 text-[#888888]">
                         <UserIcon className="w-4 h-4" />
@@ -282,15 +291,18 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Upvote Button */}
-                  <motion.button 
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="p-2 rounded-full bg-[#333333] hover:bg-[#FF6B00]/20 
-                             transition-all duration-200 opacity-0 group-hover:opacity-100"
-                  >
-                    <UpvoteIcon className="w-5 h-5 text-[#FF6B00]" />
-                  </motion.button>
+                  <div className="opacity-0 group-hover:opacity-100">
+                    <VoteButton
+                      pageId={page.id}
+                      initialVoteCount={page.vote_count}
+                      onVoteChange={(newCount) => {
+                        const updatedPages = pages.map(p =>
+                          p.id === page.id ? { ...p, vote_count: newCount } : p
+                        ).sort((a, b) => b.vote_count - a.vote_count)
+                        setPages(updatedPages)
+                      }}
+                    />
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -301,7 +313,6 @@ export default function Home() {
   )
 }
 
-// Icons
 const UserIcon = ({ className }: { className?: string }) => (
   <svg 
     className={className} 
