@@ -1,64 +1,138 @@
 'use client'
+import { useEffect, useState } from 'react'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { supabase } from '@/lib/supabase'
-import { useEffect, useState } from 'react'
 import { LoadingDots } from './LoadingSpinner'
 import { motion } from 'framer-motion'
 
+interface User {
+  id: string
+  email?: string
+  user_metadata?: {
+    custom_claims?: { global_name?: string }
+    user_name?: string
+    full_name?: string
+    name?: string
+  }
+  displayName?: string
+}
+
+
 export default function AuthButton() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null | undefined>(undefined)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    let mounted = true
+    let timeoutId: NodeJS.Timeout
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-        if (session?.user && _event === 'SIGNED_IN') {
-          // Create profile
+    const setupAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!mounted) return
+
+        if (session?.user) {
+          const displayName = getDisplayName(session.user)
+          
           const { error } = await supabase
             .from('profiles')
             .upsert({ 
               id: session.user.id,
-              username: session.user.email?.split('@')[0], // Default username
-              created_at: new Date().toISOString(),
-            })
-        }
-        setUser(session?.user ?? null)
-      })
+              username: displayName,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'id' })
 
-    return () => subscription.unsubscribe()
+          if (error) console.error('Profile update error:', error)
+          
+          setUser({
+            ...session.user,
+            displayName
+          })
+        } else {
+          setUser(null)
+        }
+      } catch (error) {
+        console.error('Auth setup error:', error)
+        if (mounted) setUser(null)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    // Set a timeout to prevent infinite loading
+    timeoutId = setTimeout(() => {
+      if (mounted && user === undefined) {
+        setUser(null)
+        setLoading(false)
+      }
+    }, 3000)
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return
+      
+      if (session?.user) {
+        const displayName = getDisplayName(session.user)
+        setUser({
+          ...session.user,
+          displayName
+        })
+      } else {
+        setUser(null)
+      }
+    })
+
+    setupAuth()
+
+    return () => {
+      mounted = false
+      clearTimeout(timeoutId)
+      subscription.unsubscribe()
+    }
   }, [])
 
-  if (loading) {
+
+
+  const getDisplayName = (user: User): string => {
+    return user.user_metadata?.custom_claims?.global_name || 
+           user.user_metadata?.user_name || 
+           user.user_metadata?.full_name || 
+           user.user_metadata?.name ||
+           user.email?.split('@')[0] ||
+           'Anonymous User'
+  }
+
+
+
+  if (loading && user === undefined) {
     return <LoadingDots />
   }
 
   if (user) {
     return (
-        <div className="flex items-center gap-4">
-          <span className="text-gray-300">{user.email}</span>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => supabase.auth.signOut()}
-            className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg hover:bg-[#252525] 
-                     transition-colors border border-[#333333] hover:border-[#FF6B00]"
-          >
-            Sign Out
-          </motion.button>
-        </div>
-      )
+      <div className="flex items-center gap-4">
+        <span className="text-gray-300">
+          {user.displayName}
+        </span>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={async () => {
+            await supabase.auth.signOut()
+            window.location.reload() // Force reload to clear any cached states
+          }}
+          className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg hover:bg-[#252525] 
+                   transition-colors border border-[#333333] hover:border-[#FF6B00]"
+        >
+          Sign Out
+        </motion.button>
+      </div>
+    )
   }
 
   if (!user) {
     return null // The Auth UI will be handled by page.tsx
   }
-
-
 
 
   return (
@@ -90,20 +164,18 @@ export default function AuthButton() {
                 }
               }
             },
-            style: {
-              container: {
-                width: '100%'
-              },
-              button: {
-                height: '44px',
-                borderRadius: '8px',
-                fontSize: '15px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                }
+              style: {
+                container: { width: '100%' },
+                button: {
+                  height: '44px',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                  }
               },
               input: {
                 height: '44px',
@@ -166,23 +238,22 @@ export default function AuthButton() {
                 email_label: 'Email address',
                 password_label: 'Create a password',
                 button_label: 'Sign in with Socials',
-                social_provider_text: 'Continue with social account',
+                social_provider_text: 'Continue with',
                 link_text: 'Don\'t have an account? Sign up',
               },
               sign_in: {
                 email_label: 'Email address',
                 password_label: 'Your password',
-                button_label: 'Sign In',
-                social_provider_text: 'Continue with social account',
+                email_input_placeholder: 'Your email address',
+                password_input_placeholder: 'Your password',
+                button_label: 'Sign in',
+                social_provider_text: 'Continue with',
                 link_text: 'Already have an account? Sign in',
-              },
-              providers: {
-                github: 'Continue with GitHub',
-                google: 'Continue with Google',
-              },
+              }
             }
           }}
-          providers={['github', 'google']}
+          
+          providers={['discord', 'github', 'google']}
           redirectTo={window.location.origin}
           providerScopes={{
             google: 'email profile',

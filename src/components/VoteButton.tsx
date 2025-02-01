@@ -1,108 +1,90 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+'use client'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { supabase } from '@/lib/supabase'
 
 interface VoteButtonProps {
-  pageId: string;
-  initialVoteCount: number;
-  onVoteChange?: (newCount: number) => void;
+  pageId: string
+  initialVoteCount: number
+  onVoteChange: (newCount: number) => void
 }
 
-const VoteButton = ({ pageId, initialVoteCount, onVoteChange }: VoteButtonProps) => {
-  const [hasVoted, setHasVoted] = useState(false);
-  const [voteCount, setVoteCount] = useState(initialVoteCount);
-  const [loading, setLoading] = useState(false);
+export default function VoteButton({ pageId, initialVoteCount, onVoteChange }: VoteButtonProps) {
+  const [hasVoted, setHasVoted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [voteCount, setVoteCount] = useState(initialVoteCount)
 
   useEffect(() => {
-    checkUserVote();
-  }, [pageId]);
+    checkUserVote()
+  }, [pageId])
 
   const checkUserVote = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
 
       const { data: vote } = await supabase
         .from('votes')
         .select('id')
         .eq('page_id', pageId)
         .eq('user_id', session.user.id)
-        .single();
+        .single()
 
-      setHasVoted(!!vote);
+      setHasVoted(!!vote)
     } catch (error) {
-      console.error('Error checking vote:', error);
+      console.error('Error checking vote:', error)
     }
-  };
+  }
 
   const handleVote = async () => {
     try {
-      setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoading(true)
+      const { data: { session } } = await supabase.auth.getSession()
       
       if (!session) {
-        alert('Please sign in to vote');
-        return;
+        alert('Please sign in to vote')
+        return
       }
+
+      // Optimistic update
+      const newCount = hasVoted ? voteCount - 1 : voteCount + 1
+      setVoteCount(newCount)
+      onVoteChange(newCount)
+      setHasVoted(!hasVoted)
 
       if (hasVoted) {
-        // Remove vote and update count
-        const { error: deleteError } = await supabase
-          .from('votes')
-          .delete()
-          .match({ 
-            page_id: pageId,
-            user_id: session.user.id 
-          });
-
-        if (deleteError) throw deleteError;
-
-        const { error: updateError } = await supabase
-          .from('pages')
-          .update({ vote_count: voteCount - 1 })
-          .eq('id', pageId);
-
-        if (updateError) throw updateError;
-        
-        setVoteCount(prev => prev - 1);
-        setHasVoted(false);
-        if (onVoteChange) onVoteChange(voteCount - 1);
+        // Remove vote
+        const { error } = await supabase.rpc('remove_vote', {
+          page_id: pageId,
+          user_id: session.user.id
+        })
+        if (error) throw error
       } else {
-        // Add vote and update count
-        const { error: insertError } = await supabase
-          .from('votes')
-          .insert({
-            page_id: pageId,
-            user_id: session.user.id
-          });
-
-        if (insertError) throw insertError;
-
-        const { error: updateError } = await supabase
-          .from('pages')
-          .update({ vote_count: voteCount + 1 })
-          .eq('id', pageId);
-
-        if (updateError) throw updateError;
-        
-        setVoteCount(prev => prev + 1);
-        setHasVoted(true);
-        if (onVoteChange) onVoteChange(voteCount + 1);
+        // Add vote
+        const { error } = await supabase.rpc('add_vote', {
+          page_id: pageId,
+          user_id: session.user.id
+        })
+        if (error) throw error
       }
     } catch (error) {
-      console.error('Error voting:', error);
-      alert('Failed to vote. Please try again.');
+      console.error('Error voting:', error)
+      // Revert optimistic update
+      setVoteCount(voteCount)
+      setHasVoted(!hasVoted)
+      onVoteChange(voteCount)
+      alert('Failed to vote. Please try again.')
     } finally {
-      setLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <motion.button
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
       onClick={handleVote}
-      disabled={loading}
+      disabled={isLoading}
       className={`p-2 rounded-full transition-all duration-200 
                 ${hasVoted 
                   ? 'bg-[#FF6B00] text-white' 
@@ -110,8 +92,8 @@ const VoteButton = ({ pageId, initialVoteCount, onVoteChange }: VoteButtonProps)
     >
       <UpvoteIcon className={`w-5 h-5 ${hasVoted ? 'text-white' : 'text-[#FF6B00]'}`} />
     </motion.button>
-  );
-};
+  )
+}
 
 const UpvoteIcon = ({ className }: { className?: string }) => (
   <svg 
@@ -127,6 +109,4 @@ const UpvoteIcon = ({ className }: { className?: string }) => (
       d="M5 15l7-7 7 7" 
     />
   </svg>
-);
-
-export default VoteButton;
+)

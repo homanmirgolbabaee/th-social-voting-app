@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import VoteButton from '@/components/VoteButton'
-import Link from 'next/link''
+import Link from 'next/link'
 
 export default function Page({ params }: { params: { id: string } }) {
     const [page, setPage] = useState<any>(null)
