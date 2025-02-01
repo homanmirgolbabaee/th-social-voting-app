@@ -16,9 +16,19 @@ export default function AuthButton() {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session?.user && _event === 'SIGNED_IN') {
+          // Create profile
+          const { error } = await supabase
+            .from('profiles')
+            .upsert({ 
+              id: session.user.id,
+              username: session.user.email?.split('@')[0], // Default username
+              created_at: new Date().toISOString(),
+            })
+        }
+        setUser(session?.user ?? null)
+      })
 
     return () => subscription.unsubscribe()
   }, [])
@@ -29,24 +39,32 @@ export default function AuthButton() {
 
   if (user) {
     return (
-      <div className="flex items-center gap-4">
-        <span className="text-gray-300">{user.email}</span>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => supabase.auth.signOut()}
-          className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg hover:bg-[#252525] 
-                   transition-colors border border-[#333333] hover:border-[#FF6B00]"
-        >
-          Sign Out
-        </motion.button>
-      </div>
-    )
+        <div className="flex items-center gap-4">
+          <span className="text-gray-300">{user.email}</span>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => supabase.auth.signOut()}
+            className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg hover:bg-[#252525] 
+                     transition-colors border border-[#333333] hover:border-[#FF6B00]"
+          >
+            Sign Out
+          </motion.button>
+        </div>
+      )
   }
 
+  if (!user) {
+    return null // The Auth UI will be handled by page.tsx
+  }
+
+
+
+
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-[#1E1E1E] backdrop-blur-xl rounded-xl p-8 shadow-2xl border border-[#333333]/50">
+    <div className="fixed inset-0 flex items-center justify-center">
+    <div className="w-full max-w-md mx-auto px-4">
+      <div className="bg-[#1A1A1A] backdrop-blur-xl rounded-xl p-8 shadow-2xl border border-[#333333]/50">
         <div className="mb-8 text-center space-y-2">
           <h1 className="text-2xl font-bold text-white">Welcome to Social Voting</h1>
           <p className="text-gray-400 text-sm">Share and discover the best community messages</p>
@@ -59,16 +77,16 @@ export default function AuthButton() {
             variables: {
               default: {
                 colors: {
-                  brand: '#FF6B00',
-                  brandAccent: '#FF8534',
-                  defaultButtonBackground: '#2A2A2A',
-                  defaultButtonBackgroundHover: '#333333',
-                  inputBackground: '#1A1A1A',
-                  inputBorder: '#333333',
-                  inputBorderFocus: '#FF6B00',
-                  inputBorderHover: '#404040',
-                  inputText: 'white',
-                  inputPlaceholder: '#666666',
+                    brand: '#FF6B00',
+                    brandAccent: '#FF8534',
+                    defaultButtonBackground: '#2A2A2A',
+                    defaultButtonBackgroundHover: '#333333',
+                    inputBackground: '#1A1A1A',
+                    inputBorder: '#333333',
+                    inputBorderFocus: '#FF6B00',
+                    inputBorderHover: '#404040',
+                    inputText: 'white',
+                    inputPlaceholder: '#666666',
                 }
               }
             },
@@ -204,5 +222,6 @@ export default function AuthButton() {
         `}</style>
       </div>
     </div>
+</div>
   )
 }

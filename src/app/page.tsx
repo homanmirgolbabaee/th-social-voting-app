@@ -39,7 +39,7 @@ export default function Home() {
   const fetchPages = async () => {
     try {
       const { data, error } = await supabase
-        .from('leaderboard')
+        .from('pages')
         .select('*')
         .order('vote_count', { ascending: false })
       
@@ -68,7 +68,88 @@ export default function Home() {
   }
 
   // Not authenticated
-  if (!user) return null
+  // In page.tsx, update the not authenticated return:
+  if (!user) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center">
+        <div className="w-full max-w-md mx-auto px-4">
+          <div className="bg-[#1A1A1A] backdrop-blur-xl rounded-xl p-8 shadow-2xl border border-[#333333]/50">
+            <div className="mb-8 text-center space-y-2">
+              <h1 className="text-2xl font-bold text-white">Welcome to Social Voting</h1>
+              <p className="text-gray-400 text-sm">Share and discover the best community messages</p>
+            </div>
+
+            <Auth
+              supabaseClient={supabase}
+              appearance={{
+                theme: ThemeSupa,
+                variables: {
+                  default: {
+                    colors: {
+                      brand: '#FF6B00',
+                      brandAccent: '#FF8534',
+                      defaultButtonBackground: '#2A2A2A',
+                      defaultButtonBackgroundHover: '#333333',
+                      inputBackground: '#1A1A1A',
+                      inputBorder: '#333333',
+                      inputBorderFocus: '#FF6B00',
+                      inputBorderHover: '#404040',
+                      inputText: 'white',
+                      inputPlaceholder: '#666666',
+                    }
+                  }
+                },
+                style: {
+                  container: { width: '100%' },
+                  button: {
+                    height: '44px',
+                    borderRadius: '8px',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    }
+                  },
+                  input: {
+                    height: '44px',
+                    borderRadius: '8px',
+                    fontSize: '15px',
+                    transition: 'all 0.2s ease',
+                    '&:hover': { borderColor: '#FF6B00' },
+                    '&:focus': {
+                      boxShadow: '0 0 0 2px rgba(255, 107, 0, 0.2)',
+                    }
+                  },
+                  label: {
+                    fontSize: '14px',
+                    color: '#e5e7eb',
+                    marginBottom: '6px',
+                  },
+                  divider: {
+                    background: 'rgba(255, 255, 255, 0.1)',
+                  },
+                  anchor: {
+                    color: '#FF6B00',
+                    fontSize: '14px',
+                    textDecoration: 'none',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease',
+                  }
+                },
+              }}
+              providers={['github', 'google']}
+              redirectTo={window.location.origin}
+              providerScopes={{
+                google: 'email profile',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <AnimatePresence>
