@@ -19,6 +19,7 @@ interface PageContent {
   creator_username?: string
 }
 
+
 function PageContent({ id }: { id: string }) {
   const [page, setPage] = useState<PageContent | null>(null)
   const [loading, setLoading] = useState(true)
@@ -27,16 +28,17 @@ function PageContent({ id }: { id: string }) {
 
   const fetchPage = async () => {
     try {
-      const { data: pageData, error } = await supabase
+      setLoading(true)
+      setError(null)
+      
+      const { data: pageData, error: pageError } = await supabase
         .from('pages')
         .select('*')
         .eq('id', id)
         .single()
-  
-      if (error) {
-        throw error
-      }
-  
+
+      if (pageError) throw pageError
+
       if (!pageData) {
         throw new Error('Page not found')
       }
@@ -69,32 +71,35 @@ function PageContent({ id }: { id: string }) {
     }
   }
 
+
   useEffect(() => {
     fetchPage()
-  
+
+    // Set up real-time subscription
     const subscription = supabase
       .channel(`page:${id}`)
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'pages', filter: `id=eq.${id}` },
-        (_payload) => { // Added underscore to mark as intentionally unused
+        (_payload) => {  // Added underscore prefix
           fetchPage()
         }
       )
       .subscribe()
-  
+
     return () => {
       subscription.unsubscribe()
     }
-  }, [id, fetchPage])
+  }, [id]) 
 
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href)
       toast.success('Link copied to clipboard!')
-    } catch (error) {
+    } catch (err) {  // Changed error to err to avoid name conflict
       toast.error('Failed to copy link')
     }
   }
+
 
   if (loading) {
     return (
@@ -103,6 +108,7 @@ function PageContent({ id }: { id: string }) {
       </div>
     )
   }
+
 
   if (error || !page) {
     return (
@@ -124,6 +130,7 @@ function PageContent({ id }: { id: string }) {
       </motion.div>
     )
   }
+
 
   return (
     <motion.div
