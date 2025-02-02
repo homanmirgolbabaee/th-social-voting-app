@@ -8,7 +8,6 @@ import { LoadingSpinner } from '@/components/LoadingSpinner'
 import VoteButton from '@/components/VoteButton'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import AuthButton from '@/components/AuthButton'
 
 
 interface PageContent {
