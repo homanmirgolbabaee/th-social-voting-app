@@ -27,17 +27,16 @@ function PageContent({ id }: { id: string }) {
 
   const fetchPage = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      const { data: pageData, error: pageError } = await supabase
+      const { data: pageData, error } = await supabase
         .from('pages')
         .select('*')
         .eq('id', id)
         .single()
-
-      if (pageError) throw pageError
-
+  
+      if (error) {
+        throw error
+      }
+  
       if (!pageData) {
         throw new Error('Page not found')
       }
@@ -72,22 +71,21 @@ function PageContent({ id }: { id: string }) {
 
   useEffect(() => {
     fetchPage()
-
-    // Set up real-time subscription
+  
     const subscription = supabase
       .channel(`page:${id}`)
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'pages', filter: `id=eq.${id}` },
-        async (payload) => {
-          await fetchPage()
+        (_payload) => { // Added underscore to mark as intentionally unused
+          fetchPage()
         }
       )
       .subscribe()
-
+  
     return () => {
       subscription.unsubscribe()
     }
-  }, [id])
+  }, [id, fetchPage])
 
   const handleShare = async () => {
     try {
