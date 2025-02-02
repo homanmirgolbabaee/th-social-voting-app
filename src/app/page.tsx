@@ -131,16 +131,21 @@ function HomePage() {
     )
   }
 
+  // Inside your HomePage component where you render the Auth UI
   if (!user) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-full max-w-md mx-auto px-4">
-          <div className="bg-[#1A1A1A] backdrop-blur-xl rounded-xl p-8 shadow-2xl border border-[#333333]/50">
-            <div className="mb-8 text-center space-y-2">
-              <h1 className="text-2xl font-bold text-white">Welcome to Social Voting</h1>
-              <p className="text-gray-400 text-sm">Share and discover the best community messages</p>
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm"> {/* Changed from max-w-md to max-w-sm for better sizing */}
+          <div className="bg-[#1A1A1A] backdrop-blur-xl rounded-xl p-6 shadow-2xl border border-[#333333] space-y-4"> {/* Reduced padding and spacing */}
+            <div className="text-center space-y-2"> {/* Reduced spacing */}
+              <h1 className="text-2xl font-bold text-white"> {/* Reduced text size */}
+                Welcome to Social Voting
+              </h1>
+              <p className="text-gray-400 text-sm">
+                Share and discover the best community messages
+              </p>
             </div>
-
+  
             <Auth
               supabaseClient={supabase}
               appearance={{
@@ -158,12 +163,61 @@ function HomePage() {
                       inputBorderHover: '#404040',
                       inputText: 'white',
                       inputPlaceholder: '#666666',
-                    }
+                    },
+                    space: {
+                      buttonPadding: '10px 14px', // Reduced padding
+                      inputPadding: '10px', // Reduced padding
+                    },
+                    borderWidths: {
+                      buttonBorderWidth: '1px',
+                      inputBorderWidth: '1px',
+                    },
+                    radii: {
+                      borderRadiusButton: '8px', // Reduced radius
+                      buttonBorderRadius: '8px', // Reduced radius
+                      inputBorderRadius: '8px', // Reduced radius
+                    },
                   }
-                }
+                },
+                style: {
+                  button: {
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    height: '40px', // Fixed height for buttons
+                  },
+                  input: {
+                    fontSize: '14px',
+                    height: '40px', // Fixed height for inputs
+                  },
+                  label: {
+                    fontSize: '14px',
+                    color: '#888888',
+                    margin: '4px 0', // Reduced margin
+                  },
+                  anchor: {
+                    color: '#FF6B00',
+                    fontSize: '14px',
+                  },
+                  message: {
+                    fontSize: '14px',
+                  },
+                  container: {
+                    gap: '12px', // Reduced gap
+                  },
+                },
               }}
+              theme="dark"
               providers={['discord', 'github', 'google']}
               redirectTo={window.location.origin}
+              magicLink={false}
+              localization={{
+                variables: {
+                  sign_in: {
+                    email_label: 'Email address',
+                    password_label: 'Your Password',
+                  },
+                },
+              }}
             />
           </div>
         </div>
