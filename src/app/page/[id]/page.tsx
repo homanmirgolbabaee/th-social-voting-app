@@ -97,7 +97,7 @@ function PageContent({ id }: { id: string }) {
     try {
       await navigator.clipboard.writeText(window.location.href)
       toast.success('Link copied to clipboard!')
-    } catch (_err) {  // Added underscore to indicate intentionally unused
+    } catch {  // Added underscore to indicate intentionally unused
       toast.error('Failed to copy link')
     }
   }
