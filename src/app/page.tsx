@@ -134,11 +134,11 @@ function HomePage() {
   // Inside your HomePage component where you render the Auth UI
   if (!user) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm"> {/* Changed from max-w-md to max-w-sm for better sizing */}
-          <div className="bg-[#1A1A1A] backdrop-blur-xl rounded-xl p-6 shadow-2xl border border-[#333333] space-y-4"> {/* Reduced padding and spacing */}
-            <div className="text-center space-y-2"> {/* Reduced spacing */}
-              <h1 className="text-2xl font-bold text-white"> {/* Reduced text size */}
+      <div className="fixed inset-0 flex items-center justify-center bg-black/20">
+        <div className="w-full max-w-[420px] mx-4"> {/* Adjusted max width */}
+          <div className="bg-[#1A1A1A]/95 backdrop-blur-sm rounded-xl p-8 border border-[#333333]/50 shadow-xl">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-bold text-white mb-2">
                 Welcome to Social Voting
               </h1>
               <p className="text-gray-400 text-sm">
@@ -165,59 +165,46 @@ function HomePage() {
                       inputPlaceholder: '#666666',
                     },
                     space: {
-                      buttonPadding: '10px 14px', // Reduced padding
-                      inputPadding: '10px', // Reduced padding
-                    },
-                    borderWidths: {
-                      buttonBorderWidth: '1px',
-                      inputBorderWidth: '1px',
+                      buttonPadding: '10px 14px',
+                      inputPadding: '10px 12px',
                     },
                     radii: {
-                      borderRadiusButton: '8px', // Reduced radius
-                      buttonBorderRadius: '8px', // Reduced radius
-                      inputBorderRadius: '8px', // Reduced radius
+                      borderRadiusButton: '8px',
+                      inputBorderRadius: '8px',
                     },
                   }
                 },
                 style: {
+                  container: {
+                    gap: '16px'
+                  },
                   button: {
+                    height: '42px',
                     fontSize: '14px',
-                    fontWeight: '500',
-                    height: '40px', // Fixed height for buttons
+                    fontWeight: '500'
                   },
                   input: {
-                    fontSize: '14px',
-                    height: '40px', // Fixed height for inputs
+                    height: '42px',
+                    fontSize: '14px'
                   },
                   label: {
                     fontSize: '14px',
-                    color: '#888888',
-                    margin: '4px 0', // Reduced margin
+                    marginBottom: '4px',
+                    color: '#888888'
                   },
                   anchor: {
                     color: '#FF6B00',
-                    fontSize: '14px',
+                    fontSize: '14px'
                   },
-                  message: {
-                    fontSize: '14px',
-                  },
-                  container: {
-                    gap: '12px', // Reduced gap
-                  },
+                  divider: {
+                    margin: '24px 0'
+                  }
                 },
               }}
               theme="dark"
               providers={['discord', 'github', 'google']}
               redirectTo={window.location.origin}
               magicLink={false}
-              localization={{
-                variables: {
-                  sign_in: {
-                    email_label: 'Email address',
-                    password_label: 'Your Password',
-                  },
-                },
-              }}
             />
           </div>
         </div>
