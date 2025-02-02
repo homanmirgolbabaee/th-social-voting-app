@@ -134,11 +134,11 @@ function HomePage() {
   // Inside your HomePage component where you render the Auth UI
   if (!user) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black/20">
-        <div className="w-full max-w-[420px] mx-4"> {/* Adjusted max width */}
-          <div className="bg-[#1A1A1A]/95 backdrop-blur-sm rounded-xl p-8 border border-[#333333]/50 shadow-xl">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold text-white mb-2">
+      <div className="fixed inset-0 flex items-center justify-center">
+        <div className="w-full max-w-[380px] mx-4"> {/* Reduced from 420px to 380px */}
+          <div className="bg-[#1A1A1A] rounded-lg p-6"> {/* Reduced padding */}
+            <div className="text-center mb-4"> {/* Reduced margin */}
+              <h1 className="text-2xl font-bold text-white mb-1">
                 Welcome to Social Voting
               </h1>
               <p className="text-gray-400 text-sm">
@@ -165,26 +165,25 @@ function HomePage() {
                       inputPlaceholder: '#666666',
                     },
                     space: {
-                      buttonPadding: '10px 14px',
-                      inputPadding: '10px 12px',
+                      buttonPadding: '8px 12px', // Reduced padding
+                      inputPadding: '8px 12px',  // Reduced padding
                     },
                     radii: {
-                      borderRadiusButton: '8px',
-                      inputBorderRadius: '8px',
+                      borderRadiusButton: '6px',  // Reduced radius
+                      inputBorderRadius: '6px',   // Reduced radius
                     },
                   }
                 },
                 style: {
                   container: {
-                    gap: '16px'
+                    gap: '12px' // Reduced gap
                   },
                   button: {
-                    height: '42px',
+                    height: '38px', // Reduced height
                     fontSize: '14px',
-                    fontWeight: '500'
                   },
                   input: {
-                    height: '42px',
+                    height: '38px', // Reduced height
                     fontSize: '14px'
                   },
                   label: {
@@ -197,7 +196,7 @@ function HomePage() {
                     fontSize: '14px'
                   },
                   divider: {
-                    margin: '24px 0'
+                    margin: '16px 0' // Reduced margin
                   }
                 },
               }}
