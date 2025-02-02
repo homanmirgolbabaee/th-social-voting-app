@@ -81,7 +81,7 @@ function HomePage() {
           .select('id, username')
           .in('id', creatorIds)
 
-        const usernameMap = (profiles || []).reduce((acc: Record<string, string>, profile) => ({
+        const usernameMap: Record<string, string> = (profiles || []).reduce((acc, profile) => ({
           ...acc,
           [profile.id]: profile.username
         }), {})
@@ -217,54 +217,54 @@ function HomePage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {pages.map((page, index) => (
-            <motion.div
-              key={page.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="group bg-[#1A1A1A]/90 backdrop-blur-sm rounded-xl p-6 border border-[#333333]
-                      hover:border-[#FF6B00]/30 transition-all duration-200"
-            >
-              <div className="flex items-start gap-6">
-                <div className="flex flex-col items-center">
-                  <span className="text-3xl font-bold text-[#FF6B00]">
-                    #{index + 1}
+        {pages.map((page, index) => (
+          <motion.div
+            key={page.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="group bg-[#1A1A1A]/90 backdrop-blur-sm rounded-xl p-6 border border-[#333333]
+                        hover:border-[#FF6B00]/30 transition-all duration-200"
+          >
+            <div className="flex items-start gap-6 pointer-events-none">
+              <div className="flex flex-col items-center">
+                <span className="text-3xl font-bold text-[#FF6B00]">
+                  #{index + 1}
+                </span>
+              </div>
+
+              <div className="flex-1 pointer-events-auto">
+                <Link href={`/page/${page.id}`} className="block">
+                  <h3 className="text-xl font-semibold text-white group-hover:text-[#FF6B00] transition-colors">
+                    {page.message}
+                  </h3>
+                </Link>
+                <div className="flex items-center gap-4 mt-4">
+                  <span className="flex items-center gap-2 text-[#888888]">
+                    <UserIcon className="w-4 h-4" />
+                    {page.creator_username}
+                  </span>
+                  <span className="flex items-center gap-2 text-[#888888]">
+                    <UpvoteIcon className="w-4 h-4" />
+                    {page.vote_count} votes
                   </span>
                 </div>
-
-                <div className="flex-1">
-                  <Link href={`/page/${page.id}`} className="block">
-                    <h3 className="text-xl font-semibold text-white group-hover:text-[#FF6B00] transition-colors">
-                      {page.message}
-                    </h3>
-                  </Link>
-                  <div className="flex items-center gap-4 mt-4">
-                    <span className="flex items-center gap-2 text-[#888888]">
-                      <UserIcon className="w-4 h-4" />
-                      {page.creator_username}
-                    </span>
-                    <span className="flex items-center gap-2 text-[#888888]">
-                      <UpvoteIcon className="w-4 h-4" />
-                      {page.vote_count} votes
-                    </span>
-                  </div>
-                </div>
-
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <VoteButton
-                    pageId={page.id}
-                    initialVoteCount={page.vote_count}
-                    onVoteChange={(newCount) => {
-                      const updatedPages = pages.map(p =>
-                        p.id === page.id ? { ...p, vote_count: newCount } : p
-                      ).sort((a, b) => b.vote_count - a.vote_count)
-                      setPages(updatedPages)
-                    }}
-                  />
-                </div>
               </div>
-            </motion.div>
-          ))}
+
+              <div className="pointer-events-auto">
+                <VoteButton
+                  pageId={page.id}
+                  initialVoteCount={page.vote_count}
+                  onVoteChange={(newCount) => {
+                    const updatedPages = pages.map(p =>
+                      p.id === page.id ? { ...p, vote_count: newCount } : p
+                    ).sort((a, b) => b.vote_count - a.vote_count)
+                    setPages(updatedPages)
+                  }}
+                />
+              </div>
+            </div>
+          </motion.div>
+        ))}
         </div>
       )}
     </div>
