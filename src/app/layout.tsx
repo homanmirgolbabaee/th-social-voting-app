@@ -29,13 +29,6 @@ export default function RootLayout({
             theme="dark"
             position="top-center"
             toastOptions={{
-              style: {
-                background: '#1A1A1A',
-                border: '1px solid #333333',
-                color: 'white',
-                paddingInline: '16px',
-                backdropFilter: 'blur(8px)',
-              },
               className: 'text-sm font-medium',
               duration: 2000,
               style: {
@@ -44,7 +37,8 @@ export default function RootLayout({
                 backdropFilter: "blur(8px)",
                 color: "white",
                 minWidth: "300px",
-                textAlign: "center"
+                textAlign: "center",
+                paddingInline: "16px"
               }
             }}
             richColors
