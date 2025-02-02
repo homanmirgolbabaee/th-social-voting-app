@@ -1,67 +1,101 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import React from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import VoteButton from '@/components/VoteButton'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
-export default function Page({ params }: { params: { id: string } }) {
-    const [page, setPage] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const [rank, setRank] = useState<number | null>(null)
+interface PageContent {
+  id: string
+  message: string
+  creator_id: string
+  vote_count: number
+  title: string
+  created_at: string
+  creator_username?: string
+}
 
-  useEffect(() => {
-    fetchPage()
-  }, [params.id])
+function PageContent({ id }: { id: string }) {
+  const [page, setPage] = useState<PageContent | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [rank, setRank] = useState<number | null>(null)
 
   const fetchPage = async () => {
     try {
-      // Fetch the specific page
+      setLoading(true)
+      setError(null)
+      
       const { data: pageData, error: pageError } = await supabase
         .from('pages')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', id)
         .single()
 
       if (pageError) throw pageError
 
-      if (pageData) {
-        // Fetch the creator's profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', pageData.creator_id)
-          .single()
-
-        // Fetch all pages to determine rank
-        const { data: allPages } = await supabase
-          .from('pages')
-          .select('id, vote_count')
-          .order('vote_count', { ascending: false })
-
-        const pageRank = allPages?.findIndex(p => p.id === params.id) ?? -1
-
-        setPage({
-          ...pageData,
-          creator_username: profileData?.username || 'Anonymous'
-        })
-        setRank(pageRank + 1)
+      if (!pageData) {
+        throw new Error('Page not found')
       }
+
+      // Fetch the creator's profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', pageData.creator_id)
+        .single()
+
+      // Fetch all pages to determine rank
+      const { data: allPages } = await supabase
+        .from('pages')
+        .select('id, vote_count')
+        .order('vote_count', { ascending: false })
+
+      const pageRank = allPages?.findIndex(p => p.id === id) ?? -1
+
+      setPage({
+        ...pageData,
+        creator_username: profileData?.username || 'Anonymous'
+      })
+      setRank(pageRank + 1)
     } catch (err) {
       console.error('Error fetching page:', err)
-      setError('Failed to load page')
+      setError(err instanceof Error ? err.message : 'Failed to load page')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href)
-      .then(() => alert('Link copied to clipboard!'))
-      .catch(() => alert('Failed to copy link'))
+  useEffect(() => {
+    fetchPage()
+
+    // Set up real-time subscription
+    const subscription = supabase
+      .channel(`page:${id}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'pages', filter: `id=eq.${id}` },
+        async (payload) => {
+          await fetchPage()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [id])
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast.success('Link copied to clipboard!')
+    } catch (error) {
+      toast.error('Failed to copy link')
+    }
   }
 
   if (loading) {
@@ -74,12 +108,22 @@ export default function Page({ params }: { params: { id: string } }) {
 
   if (error || !page) {
     return (
-      <div className="max-w-2xl mx-auto mt-8 text-center">
-        <p className="text-red-400">{error || 'Page not found'}</p>
-        <Link href="/" className="text-[#FF6B00] hover:underline mt-4 inline-block">
-          Return to Home
-        </Link>
-      </div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="max-w-2xl mx-auto mt-8 text-center"
+      >
+        <div className="bg-[#1A1A1A]/90 backdrop-blur-sm rounded-xl p-8 border border-[#333333]">
+          <p className="text-red-400 mb-4">{error || 'Page not found'}</p>
+          <Link
+            href="/"
+            className="inline-block px-6 py-3 bg-[#FF6B00] text-white rounded-xl
+                   hover:bg-[#FF8534] transition-all duration-200"
+          >
+            Return Home
+          </Link>
+        </div>
+      </motion.div>
     )
   }
 
@@ -87,20 +131,42 @@ export default function Page({ params }: { params: { id: string } }) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
       className="max-w-2xl mx-auto mt-8"
     >
       <div className="bg-[#1A1A1A]/90 backdrop-blur-sm rounded-xl p-8 border border-[#333333]">
-        {/* Rank Badge */}
-        {rank !== null && (
-          <div className="mb-6">
-            <span className="px-3 py-1 bg-[#FF6B00]/10 text-[#FF6B00] rounded-full text-sm">
-              Rank #{rank}
-            </span>
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+
+        {/* Navigation and Rank Badge Row */}
+        <div className="flex justify-between items-center mb-6">
+          <Link 
+            href="/"
+            className="flex items-center gap-2 text-[#888888] hover:text-[#FF6B00] transition-colors"
+          >
+            <BackIcon className="w-4 h-4" />
+            <span>Back to Explore</span>
+          </Link>   
+
+          {rank !== null && (
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="mb-6"
+            >
+              <span className="px-3 py-1 bg-[#FF6B00]/10 text-[#FF6B00] rounded-full text-sm">
+                Rank #{rank}
+              </span>
+            </motion.div>
+          )}
+
+    
+        </div>
+        </AnimatePresence>
 
         <div className="flex items-start justify-between">
-          <div className="flex-1">
+          <div className="flex-1 pointer-events-auto">
+            
             <h1 className="text-2xl font-bold text-white mb-4">{page.message}</h1>
             <div className="flex items-center gap-4 text-[#888888]">
               <span className="flex items-center gap-2">
@@ -113,14 +179,19 @@ export default function Page({ params }: { params: { id: string } }) {
               </span>
             </div>
           </div>
-          
-          <VoteButton 
-            pageId={page.id} 
-            initialVoteCount={page.vote_count}
-            onVoteChange={(newCount) => setPage(prev => ({ ...prev, vote_count: newCount }))}
-          />
-        </div>
 
+          <div className="pointer-events-auto">
+            <VoteButton 
+              pageId={page.id} 
+              initialVoteCount={page.vote_count}
+              onVoteChange={(newCount) => {
+                if (page) {
+                  setPage({ ...page, vote_count: newCount })
+                }
+              }}
+            />
+        </div>
+      </div>
         <div className="mt-8 pt-6 border-t border-[#333333]">
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -138,6 +209,24 @@ export default function Page({ params }: { params: { id: string } }) {
     </motion.div>
   )
 }
+
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = React.use(params)
+
+  return (
+    <Suspense 
+      fallback={
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <LoadingSpinner />
+        </div>
+      }
+    >
+      <PageContent id={id} />
+    </Suspense>
+  )
+}
+
+// Your existing Icon components remain the same...
 
 
 // Icons
@@ -188,3 +277,19 @@ const UserIcon = ({ className }: { className?: string }) => (
       />
     </svg>
   )
+  
+  const BackIcon = ({ className }: { className?: string }) => (
+  <svg 
+    className={className} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor"
+  >
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth={2} 
+      d="M10 19l-7-7m0 0l7-7m-7 7h18" 
+    />
+  </svg>
+)
