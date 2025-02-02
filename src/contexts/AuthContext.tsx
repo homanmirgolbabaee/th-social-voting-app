@@ -99,12 +99,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut()
+      // First check if we have a session
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        // If no session, just clear local state and redirect
+        setUser(null)
+        router.refresh()
+        router.replace('/')
+        return
+      }
+  
+      // If we have a session, try to sign out
+      const { error } = await supabase.auth.signOut()
+      
+      if (error && error.message !== 'Auth session missing!') {
+        throw error
+      }
+  
+      // Clear state and redirect regardless of error
       setUser(null)
-      // Add this line to redirect to home page after sign out
-      router.push('/')
+      router.refresh()
+      router.replace('/')
+  
     } catch (error) {
       console.error('Sign out error:', error)
+      // Still clear state and redirect even if there's an error
+      setUser(null)
+      router.refresh()
+      router.replace('/')
     }
   }
 
