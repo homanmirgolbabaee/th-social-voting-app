@@ -2,7 +2,7 @@
 'use client'
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-
+import { useRouter } from 'next/navigation'
 interface User {
   id: string
   email?: string
@@ -27,6 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   const getDisplayName = (user: User): string => {
     return user.user_metadata?.custom_claims?.global_name || 
@@ -100,6 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await supabase.auth.signOut()
       setUser(null)
+      // Add this line to redirect to home page after sign out
+      router.push('/')
     } catch (error) {
       console.error('Sign out error:', error)
     }

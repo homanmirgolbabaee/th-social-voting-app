@@ -9,6 +9,7 @@ import VoteButton from '@/components/VoteButton'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
+
 interface PageContent {
   id: string
   message: string
@@ -175,6 +176,8 @@ function PageContent({ id }: { id: string }) {
             
             <h1 className="text-2xl font-bold text-white mb-4">{page.message}</h1>
             <div className="flex items-center gap-4 text-[#888888]">
+
+              
               <span className="flex items-center gap-2">
                 <UserIcon className="w-4 h-4" />
                 {page.creator_username}
