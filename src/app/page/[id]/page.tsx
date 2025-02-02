@@ -26,7 +26,7 @@ function PageContent({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null)
   const [rank, setRank] = useState<number | null>(null)
 
-  const fetchPage = async () => {
+  const fetchPage = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -44,17 +44,21 @@ function PageContent({ id }: { id: string }) {
       }
 
       // Fetch the creator's profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('username')
         .eq('id', pageData.creator_id)
         .single()
 
+      if (profileError) throw profileError
+
       // Fetch all pages to determine rank
-      const { data: allPages } = await supabase
+      const { data: allPages, error: rankError } = await supabase
         .from('pages')
         .select('id, vote_count')
         .order('vote_count', { ascending: false })
+
+      if (rankError) throw rankError
 
       const pageRank = allPages?.findIndex(p => p.id === id) ?? -1
 
@@ -63,13 +67,13 @@ function PageContent({ id }: { id: string }) {
         creator_username: profileData?.username || 'Anonymous'
       })
       setRank(pageRank + 1)
-    } catch (err) {
-      console.error('Error fetching page:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load page')
+    } catch (error) {
+      console.error('Error fetching page:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load page')
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
 
   useEffect(() => {
@@ -80,16 +84,14 @@ function PageContent({ id }: { id: string }) {
       .channel(`page:${id}`)
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'pages', filter: `id=eq.${id}` },
-        (_payload) => {  // Added underscore prefix
-          fetchPage()
-        }
+        () => fetchPage() // Removed unused payload parameter
       )
       .subscribe()
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [id]) 
+  }, [id, fetchPage]) 
 
   const handleShare = async () => {
     try {
