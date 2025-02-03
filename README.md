@@ -1,6 +1,6 @@
  
 # Overall Overview
- ![Untitled-2025-01-27-2336](https://github.com/user-attachments/assets/182111d1-ac6c-4397-ad21-5fd2734e13ce)
+![Untitled-2025-01-27-2336](https://github.com/user-attachments/assets/182111d1-ac6c-4397-ad21-5fd2734e13ce)
 ![Untitled-2025-01-27-233623123123](https://github.com/user-attachments/assets/1b0ce55c-e0ca-43ca-90ba-1880a397eefa)
 
 # Social Voting App
@@ -93,9 +93,20 @@ votes
 
 
 ### Security
-- Row Level Security (RLS) policies
-- Protected routes and API endpoints
-- Secure session management
+
+#### Authentication & Session
+- OAuth 2.0 with multiple providers
+- Secure session management via Supabase Auth
+- Protected API routes and endpoints
+
+#### Database Security (RLS)
+```sql
+-- Row Level Security Policies
+profiles: PUBLIC(read) | AUTHENTICATED(create, update_own)
+pages:    PUBLIC(read) | AUTHENTICATED(create, update_own)
+votes:    PUBLIC(read) | AUTHENTICATED(create)
+```
+
 
 ## Trade-offs & Future Improvements
 
