@@ -39,15 +39,15 @@ Visit `http://localhost:3000` to see the app.
 ## Technical Choices
 
 ### Frontend
-- **Next.js 13+ (App Router)**: For server-side rendering and modern React features
-- **Tailwind CSS**: For rapid UI development and consistent styling
-- **Framer Motion**: For smooth animations and transitions
-- **shadcn/ui**: For pre-built, customizable components
+- **Next.js 13+ (App Router)**
+- **Tailwind CSS**
+- **Framer Motion**
+- **shadcn/ui**
 
 ### Backend
 - **Supabase**: 
-  - Authentication with the following providers: github, google, discord
-  - Real-time PostgreSQL (15.8) database
+  - Authentication with following providers: github, google, discord
+  - PostgreSQL (15.8) database
   - Row Level Security for data protection
   - Real-time subscriptions for live updates
 
@@ -60,10 +60,37 @@ Visit `http://localhost:3000` to see the app.
 
 ## Database Structure
 
-### Database Tables
+### Database Tables & Relations
+
+#### Overview
 - `profiles`: User information and metadata
 - `pages`: User-created messages
 - `votes`: Tracks user votes with constraints
+
+### Schema Details
+```sql
+profiles
+ - id:         uuid PRIMARY KEY NOT NULL DEFAULT uuid_generate_v4()
+ - username:   text NOT NULL
+ - created_at: timestamptz NOT NULL DEFAULT timezone('utc'::text, now())
+ - updated_at: timestamptz DEFAULT now()
+ - avatar_url: text NULL
+
+pages
+ - id:         uuid PRIMARY KEY NOT NULL DEFAULT uuid_generate_v4()
+ - message:    text NOT NULL
+ - creator_id: uuid NOT NULL REFERENCES profiles(id)
+ - vote_count: integer DEFAULT 0
+ - title:      text NULL
+ - created_at: timestamptz NOT NULL DEFAULT timezone('utc'::text, now())
+
+votes
+ - page_id:    uuid NOT NULL REFERENCES pages(id)
+ - user_id:    uuid NOT NULL REFERENCES auth.users(id)
+ - created_at: timestamptz NOT NULL DEFAULT timezone('utc'::text, now())
+ - PRIMARY KEY (page_id, user_id) 
+```
+
 
 ### Security
 - Row Level Security (RLS) policies
