@@ -8,11 +8,6 @@ A real-time social platform where users can share messages and vote on content. 
 
 ## Quick Start
 
-### Prerequisites
-- Node.js 18+ 
-- Supabase account
-- Git
-
 ### Setup
 
 1. Clone the repository
